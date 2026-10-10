@@ -2,7 +2,7 @@
 
 **A small payment service built to stay correct when the network, the provider and the client all misbehave.** It covers an explicit payment state machine, Idempotency-Key handling, HMAC-signed webhooks with replay protection, exactly-once event processing, bounded retries, timeout semantics, reconciliation against a settlement file, and an append-only audit trail. 59 tests exercise the failure paths.
 
-[![CI](https://github.com/karthy1004/payments-reliability-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/karthy1004/payments-reliability-lab/actions/workflows/ci.yml)
+[![CI](https://github.com/karthikbhumireddy/payments-reliability-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/karthikbhumireddy/payments-reliability-lab/actions/workflows/ci.yml)
 
 > [!IMPORTANT]
 > **Simulated provider, no real money.** Every charge goes to an in-process `SimulatedProvider`. There are no real card numbers, endpoints or credentials. This is a learning and portfolio project, not production payment infrastructure, and it is not PCI-scoped.
@@ -26,7 +26,7 @@ I worked on payment products across several markets as a product manager. This r
 ## Demo: every failure mode in one command
 
 ```bash
-git clone https://github.com/karthy1004/payments-reliability-lab && cd payments-reliability-lab
+git clone https://github.com/karthikbhumireddy/payments-reliability-lab && cd payments-reliability-lab
 npm ci
 npm run demo
 ```
@@ -180,4 +180,4 @@ The suite covers:
 
 ## License
 
-MIT. See [LICENSE](LICENSE). Built by [Karthik Bhumireddy](https://github.com/karthy1004) with Claude Code as an AI pair programmer. Every output and number in this README comes from a real run of this repository.
+MIT. See [LICENSE](LICENSE). Built by [Karthik Bhumireddy](https://github.com/karthikbhumireddy) with Claude Code as an AI pair programmer. Every output and number in this README comes from a real run of this repository.
