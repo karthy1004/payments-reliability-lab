@@ -1,0 +1,9 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Intentionally fake webhook secrets used only by the test harness and the offline demo"
+paths = [
+  '''tests/harness\.ts''',
+  '''scripts/demo\.ts''',
+]
