@@ -1,0 +1,30 @@
+{
+  "name": "payments-reliability-lab",
+  "version": "0.1.0",
+  "description": "A payment service that stays correct when networks, providers and clients misbehave: state machine, idempotency keys, signed webhooks, dedupe, retries, reconciliation.",
+  "license": "MIT",
+  "author": "Karthik Bhumireddy",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node src/server.ts",
+    "demo": "node scripts/demo.ts",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src tests scripts",
+    "check": "npm run typecheck && npm run lint && npm run test"
+  },
+  "dependencies": {
+    "fastify": "^5.12.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.0",
+    "@types/node": "^24.19.2",
+    "@vitest/coverage-v8": "^5.0.3",
+    "typescript": "~5.9.3",
+    "vitest": "^5.0.3"
+  }
+}

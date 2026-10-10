@@ -1,0 +1,8 @@
+node_modules/
+coverage/
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.*
+!.env.example

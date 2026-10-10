@@ -1,0 +1,124 @@
+openapi: 3.1.0
+info:
+  title: payments-reliability-lab
+  version: 0.1.0
+  description: >
+    Demo payment API against a simulated provider. Amounts are integer minor units.
+    All mutating endpoints require an Idempotency-Key header.
+servers:
+  - url: http://127.0.0.1:3000
+paths:
+  /payments:
+    post:
+      summary: Create a payment
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [amount, currency, customer_id]
+              properties:
+                amount: { type: integer, minimum: 1, maximum: 100000000 }
+                currency: { type: string, enum: [USD, EUR, GBP, INR, SGD] }
+                customer_id: { type: string, pattern: "^cus_[a-z0-9]{4,32}$" }
+                description: { type: string, maxLength: 200 }
+      responses:
+        "201":
+          description: >
+            Payment created. `state` may be non-final (`processing`, `requires_action`).
+            A replayed response carries `Idempotent-Replayed: true`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Payment" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { description: Same key still in flight, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "422": { description: Key reused with a different body, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /payments/{id}:
+    get:
+      summary: Get a payment
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Payment" } } } }
+        "404": { $ref: "#/components/responses/Error" }
+  /payments/{id}/events:
+    get:
+      summary: Audit trail for a payment (append-only)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200": { description: Ordered audit events }
+        "404": { $ref: "#/components/responses/Error" }
+  /payments/{id}/refund:
+    post:
+      summary: Fully refund a succeeded payment
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200": { description: Refunded, content: { application/json: { schema: { $ref: "#/components/schemas/Payment" } } } }
+        "409": { description: Payment not in a refundable state, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /webhooks/provider:
+    post:
+      summary: Provider webhook receiver
+      description: >
+        Requires `Provider-Signature: t=<unix>,v1=<hex hmac-sha256 of "t.body">`, within 300 s.
+        Returns 200 for every verified event, including duplicates (`outcome` explains what happened).
+      responses:
+        "200":
+          description: Verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received: { type: boolean }
+                  outcome: { type: string, enum: [applied, no_op, ignored_out_of_order, duplicate, unknown_payment, amount_mismatch] }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+  /reconciliation:
+    post:
+      summary: Reconcile the ledger against a provider settlement CSV
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema: { type: string, example: "charge_id,payment_id,amount,currency,status\nch_1,pay_1,1000,USD,captured" }
+      responses:
+        "200": { description: Summary counts, exceptions and all findings }
+        "400": { $ref: "#/components/responses/Error" }
+        "415": { $ref: "#/components/responses/Error" }
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, pattern: "^[A-Za-z0-9_\\-:.]{8,128}$" }
+  responses:
+    Error:
+      description: Error
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
+  schemas:
+    Payment:
+      type: object
+      properties:
+        id: { type: string }
+        customerId: { type: string }
+        amount: { type: integer }
+        currency: { type: string }
+        state: { type: string, enum: [created, processing, requires_action, succeeded, failed, refunded] }
+        providerChargeId: { type: [string, "null"] }
+        failureReason: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            message: { type: string }
