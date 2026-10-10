@@ -50,16 +50,16 @@ provider down for good                  failed           4               provide
    same key, different body -> 422 idempotency_key_reused
 
 3) Webhooks arrive: one duplicated, one forged, one late
-   charge.succeeded   for pay_360f7a7dâ€¦ -> applied
-   charge.succeeded   for pay_cfab3521â€¦ -> applied
-   redelivery of evt_5460ed2eâ€¦           -> duplicate
+   charge.succeeded   for pay_360f7a7d… -> applied
+   charge.succeeded   for pay_cfab3521… -> applied
+   redelivery of evt_5460ed2e…           -> duplicate
    forged signature                     -> 401 signature_mismatch
    late requires_action after success   -> ignored_out_of_order
    timed-out payment is now: succeeded
 
 4) End-of-day reconciliation against the provider's settlement file
    summary: {"matched":3,"amount_mismatch":1,"status_mismatch":0,"missing_at_provider":0,"unknown_to_us":1}
-   exception: {"kind":"amount_mismatch",â€¦,"ours":1004,"theirs":990}
+   exception: {"kind":"amount_mismatch",…,"ours":1004,"theirs":990}
    exception: {"kind":"unknown_to_us","chargeId":"ch_orphan_6","theirs":"captured","amount":4200}
 ```
 
@@ -75,7 +75,7 @@ flowchart LR
     subgraph Service
         API[Fastify routes<br/>strict JSON schema] --> IDEM[(idempotency_keys)]
         API --> SVC[PaymentService]
-        SVC --> RISK[Risk rules<br/>velocity Â· amount]
+        SVC --> RISK[Risk rules<br/>velocity · amount]
         SVC -- "retry + timeout<br/>provider key = payment id" --> PSP
         SVC --> DB[(payments<br/>state machine, CAS updates)]
         SVC --> AUD[(audit_events<br/>append-only triggers)]
@@ -105,7 +105,7 @@ stateDiagram-v2
     refunded --> [*]
 ```
 
-Every state change is a compare-and-set (`UPDATE â€¦ WHERE id = ? AND state = ?`) plus an audit row. An event that would move a payment backwards is recorded as `transition_ignored` rather than applied.
+Every state change is a compare-and-set (`UPDATE … WHERE id = ? AND state = ?`) plus an audit row. An event that would move a payment backwards is recorded as `transition_ignored` rather than applied.
 
 ### The timeout case, step by step
 
@@ -115,14 +115,14 @@ sequenceDiagram
     participant S as Service
     participant P as Provider
     C->>S: POST /payments (Idempotency-Key K)
-    S->>S: created â†’ processing
+    S->>S: created → processing
     S->>P: createCharge(idempotencyKey = pay_123)
-    Note over P: charge succeedsâ€¦
-    P--xS: â€¦but the response is lost
-    S->>S: timeout â†’ stay processing, audit "outcome_unknown"
+    Note over P: charge succeeds…
+    P--xS: …but the response is lost
+    S->>S: timeout → stay processing, audit "outcome_unknown"
     S-->>C: 201 {state: processing}
     P->>S: webhook charge.succeeded (signed)
-    S->>S: verify Â· dedupe Â· processing â†’ succeeded
+    S->>S: verify · dedupe · processing → succeeded
     Note over S,P: if the webhook never comes, reconciliation<br/>reports status_mismatch for a human to resolve
 ```
 
@@ -166,7 +166,7 @@ The suite covers:
 - **Trust boundaries:** client requests and webhook bodies are untrusted. Webhooks are verified over the raw bytes before parsing is trusted, and their amounts are cross-checked against the stored payment.
 - **Secrets:** `WEBHOOK_SECRET` comes from the environment. The demo uses an obviously fake inline secret. CI runs gitleaks over the full history.
 - **No authentication on the API.** A real deployment needs merchant API keys, per-merchant idempotency scopes and rate limiting.
-- **Single process, SQLite.** CAS updates and unique constraints make the logic correct under interleaving within one process. Multi-instance deployment needs Postgres and row-level locking or `SELECT â€¦ FOR UPDATE`.
+- **Single process, SQLite.** CAS updates and unique constraints make the logic correct under interleaving within one process. Multi-instance deployment needs Postgres and row-level locking or `SELECT … FOR UPDATE`.
 - **Full refunds only.** No partial refunds, captures or disputes.
 - **Out-of-order refunds:** a `charge.refunded` arriving before `charge.succeeded` is ignored. Reconciliation would surface it, but there is no automatic re-fetch from the provider yet.
 - **Not PCI-relevant.** No card data is ever handled.
