@@ -128,6 +128,18 @@ sequenceDiagram
 
 More detail and the reasoning behind each choice: [docs/decisions.md](docs/decisions.md).
 
+## Product notes: who it's for, how I'd measure it, what I cut
+
+| | |
+|---|---|
+| **Primary users** | Merchant engineering teams integrating payments. Finance operations closing the books every day. Support agents answering "was I charged twice?" |
+| **North-star metric (proposed)** | Duplicate or unexplained charges per million payment attempts. Target: 0. |
+| **Operational metrics (proposed)** | Payments stuck in `processing` beyond an agreed window. Webhook-to-state lag at p95. Reconciliation exceptions per day and median time to clear them. Share of exceptions that are explained (amount, status, missing, unknown) rather than "other". |
+| **Trade-offs made** | Timeouts are reported as *unknown*, not failed. That is honest, but it pushes a non-final state onto clients and support. The alternative of guessing "failed" is how customers get charged twice. |
+| **Deliberately cut from v0.1** | Partial refunds, captures and disputes, FX, multi-merchant auth, and a Postgres deployment. Each is real, but none changes the correctness story this repo exists to show. |
+
+> Targets are proposals. The repo runs against a simulated provider, so none of these numbers exist yet.
+
 ## Technology decisions
 
 | Choice | Why | Alternative considered |

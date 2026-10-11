@@ -4,6 +4,13 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    ignore:
+      # TypeScript 7 is the native-port rewrite with breaking changes; adopt deliberately, not via bot.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      # @types/node must track the Node runtime this project targets (Node 24).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

@@ -78,14 +78,20 @@ describe("idempotency keys", () => {
 
   it("returns 409 to a duplicate that arrives while the first is still in flight", async () => {
     // Hold the provider call open so request A is genuinely in flight when B arrives.
+    // Synchronise on events, not sleeps: a fixed delay is a race on a slow or busy machine.
     let release: () => void = () => {};
     const gate = new Promise<void>((r) => {
       release = r;
+    });
+    let reached: () => void = () => {};
+    const atProvider = new Promise<void>((r) => {
+      reached = r;
     });
     const db = openDb();
     const provider = new SimulatedProvider(SECRET);
     const original = provider.createCharge.bind(provider);
     provider.createCharge = async (req) => {
+      reached();
       await gate;
       return original(req);
     };
@@ -100,7 +106,7 @@ describe("idempotency keys", () => {
       });
 
     const first = send();
-    await new Promise((r) => setTimeout(r, 20)); // A has reached the provider
+    await atProvider; // A holds the key and is waiting on the provider
     const second = await send();
     expect(second.statusCode).toBe(409);
     expect(second.json().error.code).toBe("request_in_progress");
